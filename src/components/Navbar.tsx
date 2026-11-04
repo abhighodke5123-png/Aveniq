@@ -1,16 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { BrandMonogram } from './BrandMonogram';
-import { Menu, X, ArrowUpRight, Compass, Layers, Building, FolderKanban, Info } from 'lucide-react';
+import { Menu, X, ArrowUpRight, Compass, Layers, Building, FolderKanban, Info, Cloud } from 'lucide-react';
 import { PageId, formatPageUrl } from '../utils/router';
+import { useFirebaseStudio } from '../context/FirebaseContext';
 
 interface NavbarProps {
   currentPage: PageId;
   onNavigate: (page: PageId) => void;
+  onOpenPortal?: () => void;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ currentPage, onNavigate }) => {
+export const Navbar: React.FC<NavbarProps> = ({ currentPage, onNavigate, onOpenPortal }) => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { user, enquiries, opdAppointments } = useFirebaseStudio();
+  const totalRecords = enquiries.length + opdAppointments.length;
 
   useEffect(() => {
     const handleScroll = () => {
@@ -108,8 +112,23 @@ export const Navbar: React.FC<NavbarProps> = ({ currentPage, onNavigate }) => {
             })}
           </nav>
 
-          {/* Right: Start a Project Button & Mobile Menu Trigger */}
-          <div className="flex items-center gap-2.5 shrink-0">
+          {/* Right: Client Portal Button, Start a Project Button & Mobile Menu Trigger */}
+          <div className="flex items-center gap-2 shrink-0">
+            {onOpenPortal && (
+              <button
+                type="button"
+                onClick={onOpenPortal}
+                className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-mono font-semibold text-[#17191D] bg-white border border-[#E5E2DC] hover:border-[#17191D] transition-colors"
+                aria-label="Open Studio Cloud Portal"
+              >
+                <Cloud className={`w-3.5 h-3.5 ${user ? 'text-[#2E4639]' : 'text-[#777873]'}`} />
+                <span className="hidden lg:inline">{user ? 'Cloud Portal' : 'Client Portal'}</span>
+                <span className="px-1.5 py-0.5 text-[10px] bg-[#EFECE6] text-[#17191D] font-bold">
+                  {totalRecords}
+                </span>
+              </button>
+            )}
+
             <button
               type="button"
               onClick={() => {

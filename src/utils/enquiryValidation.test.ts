@@ -1,6 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { validateEnquiryForm, generateWhatsAppEnquiryUrl } from './enquiryValidation';
+import {
+  validateEnquiryForm,
+  generateWhatsAppEnquiryUrl,
+  sanitizeEnquiryPayload,
+  sanitizeOpdPayload,
+  generateSafeDocId,
+  VALID_ID_REGEX,
+  ENQUIRY_BOUNDS,
+} from './enquiryValidation';
 import { EnquiryFormData } from '../types';
 
 test('validateEnquiryForm returns errors for empty object', () => {
@@ -46,6 +54,37 @@ test('validateEnquiryForm accepts valid complete data', () => {
   const result = validateEnquiryForm(validData);
   assert.equal(result.isValid, true);
   assert.equal(Object.keys(result.errors).length, 0);
+});
+
+test('sanitizeEnquiryPayload and sanitizeOpdPayload enforce firebase-blueprint.json bounds', () => {
+  const raw: EnquiryFormData = {
+    fullName: '  Dr. Arvind Mehta  ',
+    businessName: '  Aura Hospital  ',
+    email: '  arvind@aurahospital.org  ',
+    phone: '+91 98200 12345',
+    country: 'India',
+    interestedService: 'Hospital Website',
+    budgetRange: '',
+    timeline: '',
+    projectDescription: 'A'.repeat(2500),
+  };
+
+  const sanitized = sanitizeEnquiryPayload(raw);
+  assert.equal(sanitized.fullName, 'Dr. Arvind Mehta');
+  assert.equal(sanitized.projectDescription.length, ENQUIRY_BOUNDS.projectDescription.maxLength);
+  assert.ok(sanitized.budgetRange.length >= 1);
+  assert.ok(sanitized.timeline.length >= 1);
+
+  const opd = sanitizeOpdPayload({
+    patientName: '  Ramesh Kumar  ',
+    department: 'Cardiology',
+    leadDoctor: 'Dr. Arvind Mehta, MS, MCh',
+    preferredSlot: '10:30 AM',
+  });
+  assert.equal(opd.patientName, 'Ramesh Kumar');
+
+  const docId = generateSafeDocId('enq');
+  assert.ok(VALID_ID_REGEX.test(docId));
 });
 
 test('generateWhatsAppEnquiryUrl generates valid encoded url with details', () => {

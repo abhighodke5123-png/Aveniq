@@ -16,6 +16,8 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import { HEALTHCARE_FEATURES } from '../data/studioData';
+import { useFirebaseStudio } from '../context/FirebaseContext';
+import { OpdSlot } from '../types';
 
 interface HealthcareFeatureProps {
   onStartHealthcareProject: () => void;
@@ -24,10 +26,11 @@ interface HealthcareFeatureProps {
 export const HealthcareFeature: React.FC<HealthcareFeatureProps> = ({
   onStartHealthcareProject,
 }) => {
+  const { submitOpdAppointment, opdAppointments } = useFirebaseStudio();
   const [selectedDepartment, setSelectedDepartment] = useState<'Cardiology' | 'Oncology' | 'Orthopedics' | 'Neurology'>('Cardiology');
   const [mockBookingSuccess, setMockBookingSuccess] = useState(false);
   const [patientName, setPatientName] = useState('');
-  const [selectedSlot, setSelectedSlot] = useState('10:30 AM');
+  const [selectedSlot, setSelectedSlot] = useState<OpdSlot>('10:30 AM');
   const [viewportMode, setViewportMode] = useState<'desktop' | 'mobile'>('desktop');
 
   const departments = {
@@ -67,9 +70,15 @@ export const HealthcareFeature: React.FC<HealthcareFeatureProps> = ({
 
   const currentDept = departments[selectedDepartment];
 
-  const handleSimulatedBooking = (e: React.FormEvent) => {
+  const handleSimulatedBooking = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!patientName.trim()) return;
+    if (patientName.trim().length < 2) return;
+    await submitOpdAppointment({
+      patientName: patientName.trim(),
+      department: selectedDepartment,
+      leadDoctor: currentDept.leadDoctor,
+      preferredSlot: selectedSlot,
+    });
     setMockBookingSuccess(true);
     setTimeout(() => {
       setMockBookingSuccess(false);
@@ -283,7 +292,9 @@ export const HealthcareFeature: React.FC<HealthcareFeatureProps> = ({
                     <span className="text-xs font-heading font-bold text-[#17191D] flex items-center gap-1.5">
                       <Calendar className="w-3.5 h-3.5 text-[#91A99B]" /> Instant OPD Appointment Request
                     </span>
-                    <span className="text-[10px] font-mono text-[#777873]">Verified Desk</span>
+                    <span className="text-[10px] font-mono text-[#777873]">
+                      Verified Desk · {opdAppointments.length} Logged
+                    </span>
                   </div>
 
                   {mockBookingSuccess ? (
@@ -292,7 +303,7 @@ export const HealthcareFeature: React.FC<HealthcareFeatureProps> = ({
                         <CheckCircle2 className="w-4 h-4 text-[#2E4639]" /> Request Logged for {selectedDepartment}
                       </div>
                       <p className="text-[11px] text-[#777873]">
-                        Simulated: Hospital desk receives automated WhatsApp &amp; SMS notification. Patient receives confirmation link.
+                        Saved to Studio Portal (`opdAppointments`). Hospital desk receives automated WhatsApp &amp; SMS notification.
                       </p>
                     </div>
                   ) : (
@@ -326,7 +337,7 @@ export const HealthcareFeature: React.FC<HealthcareFeatureProps> = ({
                           <select
                             id="mockup-slot"
                             value={selectedSlot}
-                            onChange={(e) => setSelectedSlot(e.target.value)}
+                            onChange={(e) => setSelectedSlot(e.target.value as OpdSlot)}
                             className="w-full text-xs px-2.5 py-1.5 bg-white border border-[#E5E2DC] focus:border-[#17191D] focus:outline-none"
                           >
                             <option value="10:30 AM">Morning: 10:30 AM</option>

@@ -8,6 +8,31 @@ export type ServiceCategory =
   | 'AI & Automation'
   | 'Other';
 
+export type EnquiryStatus =
+  | 'submitted'
+  | 'in_review'
+  | 'scheduled'
+  | 'completed'
+  | 'archived';
+
+export type OpdDepartment =
+  | 'Cardiology'
+  | 'Oncology'
+  | 'Orthopedics'
+  | 'Neurology';
+
+export type OpdSlot =
+  | '10:30 AM'
+  | '12:00 PM'
+  | '03:30 PM'
+  | '05:00 PM';
+
+export type OpdStatus =
+  | 'requested'
+  | 'confirmed'
+  | 'completed'
+  | 'cancelled';
+
 export interface EnquiryFormData {
   fullName: string;
   businessName: string;
@@ -18,6 +43,33 @@ export interface EnquiryFormData {
   budgetRange?: string;
   timeline?: string;
   projectDescription: string;
+}
+
+export interface StoredEnquiryRecord extends EnquiryFormData {
+  id: string;
+  ownerId: string;
+  budgetRange: string;
+  timeline: string;
+  status: EnquiryStatus;
+  createdAtIso: string;
+  updatedAtIso: string;
+  syncedToCloud: boolean;
+}
+
+export interface OpdAppointmentInput {
+  patientName: string;
+  department: OpdDepartment;
+  leadDoctor: string;
+  preferredSlot: OpdSlot;
+}
+
+export interface StoredOpdRecord extends OpdAppointmentInput {
+  id: string;
+  ownerId: string;
+  status: OpdStatus;
+  createdAtIso: string;
+  updatedAtIso: string;
+  syncedToCloud: boolean;
 }
 
 export interface ValidationResult {

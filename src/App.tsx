@@ -10,6 +10,8 @@ import { ContactPage } from './pages/ContactPage';
 import { ProjectModal } from './components/ProjectModal';
 import { ServiceModal } from './components/ServiceModal';
 import { PrivacyModal } from './components/PrivacyModal';
+import { StudioPortalModal } from './components/StudioPortalModal';
+import { FirebaseProvider } from './context/FirebaseContext';
 import { ConceptProject, ServiceItem, ServiceCategory } from './types';
 import { PageId, parsePageFromPath, formatPageUrl, ROUTES } from './utils/router';
 
@@ -26,6 +28,7 @@ export default function App() {
   const [selectedProject, setSelectedProject] = useState<ConceptProject | null>(null);
   const [selectedService, setSelectedService] = useState<ServiceItem | null>(null);
   const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
+  const [isPortalOpen, setIsPortalOpen] = useState(false);
   const [activeEnquiryService, setActiveEnquiryService] = useState<ServiceCategory>('Hospital Website');
 
   // Synchronize browser history and hash
@@ -58,6 +61,7 @@ export default function App() {
         setSelectedProject(null);
         setSelectedService(null);
         setIsPrivacyOpen(false);
+        setIsPortalOpen(false);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -96,91 +100,102 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F7F6F2] text-[#17191D] flex flex-col font-sans selection:bg-[#91A99B]/30 selection:text-[#17191D]">
-      {/* Sticky Studio Navigation with clearly differentiated buttons */}
-      <Navbar
-        currentPage={currentPage}
-        onNavigate={handleNavigate}
-      />
+    <FirebaseProvider>
+      <div className="min-h-screen bg-[#F7F6F2] text-[#17191D] flex flex-col font-sans selection:bg-[#91A99B]/30 selection:text-[#17191D]">
+        {/* Sticky Studio Navigation with clearly differentiated buttons */}
+        <Navbar
+          currentPage={currentPage}
+          onNavigate={handleNavigate}
+          onOpenPortal={() => setIsPortalOpen(true)}
+        />
 
-      {/* Main Routed Page Content */}
-      <main className="flex-1">
-        {currentPage === 'home' && (
-          <HomePage
-            onNavigate={handleNavigate}
-            onSelectProject={(project) => setSelectedProject(project)}
-            onSelectService={(service) => setSelectedService(service)}
-          />
-        )}
+        {/* Main Routed Page Content */}
+        <main className="flex-1">
+          {currentPage === 'home' && (
+            <HomePage
+              onNavigate={handleNavigate}
+              onSelectProject={(project) => setSelectedProject(project)}
+              onSelectService={(service) => setSelectedService(service)}
+            />
+          )}
 
-        {currentPage === 'services' && (
-          <ServicesPage
-            onNavigate={handleNavigate}
-            onSelectServiceModal={(service) => setSelectedService(service)}
-            onInitiateServiceInquiry={(category) => {
-              setActiveEnquiryService(category);
-              handleNavigate('contact');
-            }}
-          />
-        )}
+          {currentPage === 'services' && (
+            <ServicesPage
+              onNavigate={handleNavigate}
+              onSelectServiceModal={(service) => setSelectedService(service)}
+              onInitiateServiceInquiry={(category) => {
+                setActiveEnquiryService(category);
+                handleNavigate('contact');
+              }}
+            />
+          )}
 
-        {currentPage === 'industries' && (
-          <IndustriesPage
-            onNavigate={handleNavigate}
-            onInitiateIndustryInquiry={(category) => {
-              setActiveEnquiryService(category);
-              handleNavigate('contact');
-            }}
-          />
-        )}
+          {currentPage === 'industries' && (
+            <IndustriesPage
+              onNavigate={handleNavigate}
+              onInitiateIndustryInquiry={(category) => {
+                setActiveEnquiryService(category);
+                handleNavigate('contact');
+              }}
+            />
+          )}
 
-        {currentPage === 'work' && (
-          <WorkPage
-            onNavigate={handleNavigate}
-            onSelectProject={(project) => setSelectedProject(project)}
-          />
-        )}
+          {currentPage === 'work' && (
+            <WorkPage
+              onNavigate={handleNavigate}
+              onSelectProject={(project) => setSelectedProject(project)}
+            />
+          )}
 
-        {currentPage === 'about' && (
-          <AboutPage
-            onNavigate={handleNavigate}
-          />
-        )}
+          {currentPage === 'about' && (
+            <AboutPage
+              onNavigate={handleNavigate}
+            />
+          )}
 
-        {currentPage === 'contact' && (
-          <ContactPage
-            key={activeEnquiryService}
-            initialService={activeEnquiryService}
-            onNavigate={handleNavigate}
-          />
-        )}
-      </main>
+          {currentPage === 'contact' && (
+            <ContactPage
+              key={activeEnquiryService}
+              initialService={activeEnquiryService}
+              onNavigate={handleNavigate}
+              onOpenPortal={() => setIsPortalOpen(true)}
+            />
+          )}
+        </main>
 
-      {/* Global Studio Footer with Page Navigation */}
-      <Footer
-        onOpenPrivacy={() => setIsPrivacyOpen(true)}
-        onNavigatePage={handleNavigate}
-      />
+        {/* Global Studio Footer with Page Navigation */}
+        <Footer
+          onOpenPrivacy={() => setIsPrivacyOpen(true)}
+          onNavigatePage={handleNavigate}
+        />
 
-      {/* Concept Project Architectural Blueprint Modal */}
-      <ProjectModal
-        project={selectedProject}
-        onClose={() => setSelectedProject(null)}
-        onStartSimilarProject={handleStartSimilarProject}
-      />
+        {/* Concept Project Architectural Blueprint Modal */}
+        <ProjectModal
+          project={selectedProject}
+          onClose={() => setSelectedProject(null)}
+          onStartSimilarProject={handleStartSimilarProject}
+        />
 
-      {/* Service Capabilities Modal */}
-      <ServiceModal
-        service={selectedService}
-        onClose={() => setSelectedService(null)}
-        onInitiateService={handleInitiateService}
-      />
+        {/* Service Capabilities Modal */}
+        <ServiceModal
+          service={selectedService}
+          onClose={() => setSelectedService(null)}
+          onInitiateService={handleInitiateService}
+        />
 
-      {/* Privacy Policy Modal */}
-      <PrivacyModal
-        isOpen={isPrivacyOpen}
-        onClose={() => setIsPrivacyOpen(false)}
-      />
-    </div>
+        {/* Privacy Policy Modal */}
+        <PrivacyModal
+          isOpen={isPrivacyOpen}
+          onClose={() => setIsPrivacyOpen(false)}
+        />
+
+        {/* Firebase Studio Cloud Portal Modal */}
+        <StudioPortalModal
+          isOpen={isPortalOpen}
+          onClose={() => setIsPortalOpen(false)}
+          onStartNewEnquiry={() => handleNavigate('contact')}
+        />
+      </div>
+    </FirebaseProvider>
   );
 }

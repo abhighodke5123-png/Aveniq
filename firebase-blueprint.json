@@ -1,0 +1,223 @@
+{
+  "entities": {
+    "Admin": {
+      "title": "Admin",
+      "description": "Trusted administrator registry document keyed by Firebase Auth UID.",
+      "type": "object",
+      "properties": {
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "Verified administrator email address.",
+          "minLength": 3,
+          "maxLength": 254
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when admin record was provisioned."
+        }
+      },
+      "required": ["email", "createdAt"]
+    },
+    "Enquiry": {
+      "title": "Enquiry",
+      "description": "Client project enquiry submitted to AVENIQ Digital Experience Studio.",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "description": "Firebase Auth UID of the user who created the project enquiry.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "fullName": {
+          "type": "string",
+          "description": "Full name of the prospective client or clinical director.",
+          "minLength": 2,
+          "maxLength": 120
+        },
+        "businessName": {
+          "type": "string",
+          "description": "Hospital, clinic, or business organisation name.",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "Work or organisation email address.",
+          "minLength": 3,
+          "maxLength": 254,
+          "pattern": "^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$"
+        },
+        "phone": {
+          "type": "string",
+          "description": "Contact telephone number with international country code.",
+          "minLength": 7,
+          "maxLength": 32
+        },
+        "country": {
+          "type": "string",
+          "description": "Country or geographic region of the organisation.",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "interestedService": {
+          "type": "string",
+          "description": "Primary digital studio capability requested.",
+          "enum": [
+            "Hospital Website",
+            "Clinic Website",
+            "Business Website",
+            "E-commerce Website",
+            "Website Redesign",
+            "SEO & Digital Growth",
+            "AI & Automation",
+            "Other"
+          ],
+          "minLength": 1,
+          "maxLength": 60
+        },
+        "budgetRange": {
+          "type": "string",
+          "description": "Estimated investment bracket for the project.",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "timeline": {
+          "type": "string",
+          "description": "Target launch timeline.",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "projectDescription": {
+          "type": "string",
+          "description": "Detailed scope, objectives, and architectural requirements.",
+          "minLength": 15,
+          "maxLength": 2000
+        },
+        "status": {
+          "type": "string",
+          "description": "Lifecycle status of the project brief.",
+          "enum": ["submitted", "in_review", "scheduled", "completed", "archived"],
+          "minLength": 1,
+          "maxLength": 32
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Immutable server timestamp of submission."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of the latest status or brief update."
+        }
+      },
+      "required": [
+        "ownerId",
+        "fullName",
+        "businessName",
+        "email",
+        "phone",
+        "country",
+        "interestedService",
+        "budgetRange",
+        "timeline",
+        "projectDescription",
+        "status",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "OpdAppointment": {
+      "title": "OpdAppointment",
+      "description": "Interactive hospital OPD specialist consultation request from the Healthcare Suite.",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "description": "Firebase Auth UID of the user who submitted the OPD request.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "patientName": {
+          "type": "string",
+          "description": "Full name of the patient requesting specialist OPD consultation.",
+          "minLength": 2,
+          "maxLength": 120
+        },
+        "department": {
+          "type": "string",
+          "description": "Hospital clinical department selected.",
+          "enum": ["Cardiology", "Oncology", "Orthopedics", "Neurology"],
+          "minLength": 1,
+          "maxLength": 40
+        },
+        "leadDoctor": {
+          "type": "string",
+          "description": "Assigned department specialist physician.",
+          "minLength": 2,
+          "maxLength": 120
+        },
+        "preferredSlot": {
+          "type": "string",
+          "description": "Requested OPD consultation time window.",
+          "enum": ["10:30 AM", "12:00 PM", "03:30 PM", "05:00 PM"],
+          "minLength": 1,
+          "maxLength": 32
+        },
+        "status": {
+          "type": "string",
+          "description": "Current booking triage status.",
+          "enum": ["requested", "confirmed", "completed", "cancelled"],
+          "minLength": 1,
+          "maxLength": 32
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Immutable server timestamp of the request."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of the latest triage state change."
+        }
+      },
+      "required": [
+        "ownerId",
+        "patientName",
+        "department",
+        "leadDoctor",
+        "preferredSlot",
+        "status",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/admins/{adminId}": {
+      "schema": {
+        "$ref": "#/entities/Admin"
+      },
+      "description": "Read-only registry of administrator UIDs."
+    },
+    "/enquiries/{enquiryId}": {
+      "schema": {
+        "$ref": "#/entities/Enquiry"
+      },
+      "description": "Collection of client project enquiries scoped to their creator UID and studio admins."
+    },
+    "/opdAppointments/{appointmentId}": {
+      "schema": {
+        "$ref": "#/entities/OpdAppointment"
+      },
+      "description": "Collection of healthcare OPD specialist appointment requests scoped to their creator UID and studio admins."
+    }
+  }
+}

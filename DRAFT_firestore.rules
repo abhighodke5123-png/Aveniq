@@ -1,0 +1,247 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 1. Global Safety Net (Default-Deny Catch-All)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // =========================================================================
+    // Phase 3: Hardened Global Primitives
+    // =========================================================================
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isBootstrappedAdmin() {
+      return isVerifiedUser() && request.auth.token.email == 'abhighodke5123@gmail.com';
+    }
+
+    function isAdmin() {
+      return isBootstrappedAdmin() || (
+        isVerifiedUser() && exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    // =========================================================================
+    // Validation Blueprints (Pillar 2: The "Anti-Update-Gap")
+    // =========================================================================
+    function isValidEnquiry(data) {
+      return data.keys().hasAll([
+        'ownerId',
+        'fullName',
+        'businessName',
+        'email',
+        'phone',
+        'country',
+        'interestedService',
+        'budgetRange',
+        'timeline',
+        'projectDescription',
+        'status',
+        'createdAt',
+        'updatedAt'
+      ]) &&
+      data.keys().hasOnly([
+        'ownerId',
+        'fullName',
+        'businessName',
+        'email',
+        'phone',
+        'country',
+        'interestedService',
+        'budgetRange',
+        'timeline',
+        'projectDescription',
+        'status',
+        'createdAt',
+        'updatedAt'
+      ]) &&
+      data.ownerId is string && data.ownerId.size() >= 1 && data.ownerId.size() <= 128 && data.ownerId.matches('^[a-zA-Z0-9_\\-]+$') &&
+      data.fullName is string && data.fullName.size() >= 2 && data.fullName.size() <= 120 &&
+      data.businessName is string && data.businessName.size() >= 1 && data.businessName.size() <= 160 &&
+      data.email is string && data.email.size() >= 3 && data.email.size() <= 254 && data.email.matches('^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$') &&
+      data.phone is string && data.phone.size() >= 7 && data.phone.size() <= 32 &&
+      data.country is string && data.country.size() >= 1 && data.country.size() <= 100 &&
+      data.interestedService is string && data.interestedService.size() >= 1 && data.interestedService.size() <= 60 &&
+      data.interestedService in [
+        'Hospital Website',
+        'Clinic Website',
+        'Business Website',
+        'E-commerce Website',
+        'Website Redesign',
+        'SEO & Digital Growth',
+        'AI & Automation',
+        'Other'
+      ] &&
+      data.budgetRange is string && data.budgetRange.size() >= 1 && data.budgetRange.size() <= 80 &&
+      data.timeline is string && data.timeline.size() >= 1 && data.timeline.size() <= 80 &&
+      data.projectDescription is string && data.projectDescription.size() >= 15 && data.projectDescription.size() <= 2000 &&
+      data.status is string && data.status.size() >= 1 && data.status.size() <= 32 &&
+      data.status in ['submitted', 'in_review', 'scheduled', 'completed', 'archived'] &&
+      data.createdAt is timestamp &&
+      data.updatedAt is timestamp;
+    }
+
+    function isValidOpdAppointment(data) {
+      return data.keys().hasAll([
+        'ownerId',
+        'patientName',
+        'department',
+        'leadDoctor',
+        'preferredSlot',
+        'status',
+        'createdAt',
+        'updatedAt'
+      ]) &&
+      data.keys().hasOnly([
+        'ownerId',
+        'patientName',
+        'department',
+        'leadDoctor',
+        'preferredSlot',
+        'status',
+        'createdAt',
+        'updatedAt'
+      ]) &&
+      data.ownerId is string && data.ownerId.size() >= 1 && data.ownerId.size() <= 128 && data.ownerId.matches('^[a-zA-Z0-9_\\-]+$') &&
+      data.patientName is string && data.patientName.size() >= 2 && data.patientName.size() <= 120 &&
+      data.department is string && data.department.size() >= 1 && data.department.size() <= 40 &&
+      data.department in ['Cardiology', 'Oncology', 'Orthopedics', 'Neurology'] &&
+      data.leadDoctor is string && data.leadDoctor.size() >= 2 && data.leadDoctor.size() <= 120 &&
+      data.preferredSlot is string && data.preferredSlot.size() >= 1 && data.preferredSlot.size() <= 32 &&
+      data.preferredSlot in ['10:30 AM', '12:00 PM', '03:30 PM', '05:00 PM'] &&
+      data.status is string && data.status.size() >= 1 && data.status.size() <= 32 &&
+      data.status in ['requested', 'confirmed', 'completed', 'cancelled'] &&
+      data.createdAt is timestamp &&
+      data.updatedAt is timestamp;
+    }
+
+    // =========================================================================
+    // Collection: /admins/{adminId}
+    // =========================================================================
+    match /admins/{adminId} {
+      allow get: if isVerifiedUser() && isValidId(adminId) && request.auth.uid == adminId;
+      allow list: if false;
+      allow create, update, delete: if false;
+    }
+
+    // =========================================================================
+    // Collection: /enquiries/{enquiryId}
+    // =========================================================================
+    match /enquiries/{enquiryId} {
+      // Single-document read: Owner or Studio Admin only (PII isolated)
+      allow get: if isVerifiedUser() && isValidId(enquiryId) && (
+        existing().ownerId == request.auth.uid || isAdmin()
+      );
+
+      // List query enforcer: Strictly evaluates resource.data (no get/exists inside list)
+      allow list: if isVerifiedUser() && (
+        resource.data.ownerId == request.auth.uid || isBootstrappedAdmin()
+      );
+
+      // Create: Must be verified user, valid ID, valid schema, self-owned, initial status 'submitted', server timestamps
+      allow create: if isVerifiedUser() &&
+        isValidId(enquiryId) &&
+        isValidEnquiry(incoming()) &&
+        incoming().ownerId == request.auth.uid &&
+        incoming().status == 'submitted' &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+
+      // Action-Based Update: Wrapped in isValidEnquiry(incoming()) with immutable ownerId & createdAt and terminal state locking
+      allow update: if isVerifiedUser() &&
+        isValidId(enquiryId) &&
+        isValidEnquiry(incoming()) &&
+        incoming().ownerId == existing().ownerId &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time && (
+          // Action 1: Owner edits brief details before terminal state
+          (
+            existing().ownerId == request.auth.uid &&
+            !(existing().status in ['completed', 'archived']) &&
+            incoming().status == existing().status &&
+            incoming().diff(existing()).affectedKeys().hasOnly(['projectDescription', 'timeline', 'budgetRange', 'updatedAt'])
+          ) ||
+          // Action 2: Studio Admin updates status or brief details
+          (
+            isAdmin() &&
+            incoming().diff(existing()).affectedKeys().hasOnly(['status', 'projectDescription', 'timeline', 'budgetRange', 'updatedAt'])
+          )
+        );
+
+      // Delete: Owner (if not completed) or Studio Admin
+      allow delete: if isVerifiedUser() && isValidId(enquiryId) && (
+        (existing().ownerId == request.auth.uid && existing().status != 'completed') ||
+        isAdmin()
+      );
+    }
+
+    // =========================================================================
+    // Collection: /opdAppointments/{appointmentId}
+    // =========================================================================
+    match /opdAppointments/{appointmentId} {
+      // Single-document read: Owner or Studio Admin only
+      allow get: if isVerifiedUser() && isValidId(appointmentId) && (
+        existing().ownerId == request.auth.uid || isAdmin()
+      );
+
+      // List query enforcer: Strictly evaluates resource.data (no get/exists inside list)
+      allow list: if isVerifiedUser() && (
+        resource.data.ownerId == request.auth.uid || isBootstrappedAdmin()
+      );
+
+      // Create: Must be verified user, valid ID, valid schema, self-owned, initial status 'requested', server timestamps
+      allow create: if isVerifiedUser() &&
+        isValidId(appointmentId) &&
+        isValidOpdAppointment(incoming()) &&
+        incoming().ownerId == request.auth.uid &&
+        incoming().status == 'requested' &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+
+      // Action-Based Update: Wrapped in isValidOpdAppointment(incoming()) with immutable ownerId & createdAt and terminal state locking
+      allow update: if isVerifiedUser() &&
+        isValidId(appointmentId) &&
+        isValidOpdAppointment(incoming()) &&
+        incoming().ownerId == existing().ownerId &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time && (
+          // Action 1: Owner reschedules slot or cancels before terminal state
+          (
+            existing().ownerId == request.auth.uid &&
+            !(existing().status in ['completed', 'cancelled']) &&
+            incoming().status in ['requested', 'cancelled'] &&
+            incoming().diff(existing()).affectedKeys().hasOnly(['preferredSlot', 'status', 'updatedAt'])
+          ) ||
+          // Action 2: Studio Admin updates appointment triage status or slot
+          (
+            isAdmin() &&
+            incoming().diff(existing()).affectedKeys().hasOnly(['preferredSlot', 'status', 'updatedAt'])
+          )
+        );
+
+      // Delete: Owner (if not completed) or Studio Admin
+      allow delete: if isVerifiedUser() && isValidId(appointmentId) && (
+        (existing().ownerId == request.auth.uid && existing().status != 'completed') ||
+        isAdmin()
+      );
+    }
+  }
+}

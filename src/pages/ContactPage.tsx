@@ -8,11 +8,13 @@ import { MessageSquare, Mail, ShieldCheck, Clock, MapPin, ArrowUpRight } from 'l
 interface ContactPageProps {
   initialService?: ServiceCategory;
   onNavigate: (page: PageId) => void;
+  onOpenPortal?: () => void;
 }
 
 export const ContactPage: React.FC<ContactPageProps> = ({
   initialService = 'Hospital Website',
   onNavigate,
+  onOpenPortal,
 }) => {
   return (
     <div className="pt-28 sm:pt-36 pb-24 bg-[#F7F6F2]">
@@ -74,6 +76,7 @@ export const ContactPage: React.FC<ContactPageProps> = ({
             initialService={initialService}
             hideHeader={true}
             embedded={true}
+            onOpenPortal={onOpenPortal}
           />
         </div>
 

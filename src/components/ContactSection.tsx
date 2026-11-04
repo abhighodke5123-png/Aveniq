@@ -10,10 +10,13 @@ import {
   ShieldCheck,
   ChevronDown,
   Code2,
+  Cloud,
+  LogIn,
 } from 'lucide-react';
-import { EnquiryFormData, ServiceCategory } from '../types';
+import { EnquiryFormData, ServiceCategory, StoredEnquiryRecord } from '../types';
 import { validateEnquiryForm, generateWhatsAppEnquiryUrl } from '../utils/enquiryValidation';
 import { STUDIO_META } from '../data/studioData';
+import { useFirebaseStudio } from '../context/FirebaseContext';
 
 const SERVICE_OPTIONS: ServiceCategory[] = [
   'Hospital Website',
@@ -37,13 +40,17 @@ interface ContactSectionProps {
   initialService?: ServiceCategory;
   hideHeader?: boolean;
   embedded?: boolean;
+  onOpenPortal?: () => void;
 }
 
 export const ContactSection: React.FC<ContactSectionProps> = ({
   initialService,
   hideHeader = false,
   embedded = false,
+  onOpenPortal,
 }) => {
+  const { user, signInWithGoogle, submitEnquiry, enquiries } = useFirebaseStudio();
+
   const [formData, setFormData] = useState<EnquiryFormData>({
     fullName: '',
     businessName: '',
@@ -66,7 +73,7 @@ export const ContactSection: React.FC<ContactSectionProps> = ({
   const [honeypot, setHoneypot] = useState('');
   const [errors, setErrors] = useState<Partial<Record<keyof EnquiryFormData, string>>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submittedData, setSubmittedData] = useState<EnquiryFormData | null>(null);
+  const [submittedData, setSubmittedData] = useState<StoredEnquiryRecord | null>(null);
   const [copiedReceipt, setCopiedReceipt] = useState(false);
   const [showIntegrationDetails, setShowIntegrationDetails] = useState(false);
 
@@ -104,11 +111,12 @@ export const ContactSection: React.FC<ContactSectionProps> = ({
     setIsSubmitting(true);
     setErrors({});
 
-    // Simulate API submission / network dispatch
-    await new Promise((resolve) => setTimeout(resolve, 500));
-
-    setIsSubmitting(false);
-    setSubmittedData({ ...formData });
+    try {
+      const savedRecord = await submitEnquiry(formData);
+      setSubmittedData(savedRecord);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleCopyPayload = () => {
@@ -203,6 +211,45 @@ export const ContactSection: React.FC<ContactSectionProps> = ({
                 </a>
               </div>
 
+              {/* Firebase Cloud Portal Status Card */}
+              <div className="p-5 bg-white border border-[#E5E2DC] space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-xs font-mono uppercase font-bold text-[#17191D]">
+                    <Cloud className="w-3.5 h-3.5 text-[#91A99B]" />
+                    <span>Firebase Cloud Sync</span>
+                  </div>
+                  <span className="text-[10px] font-mono px-2 py-0.5 bg-[#91A99B]/20 text-[#2E4639] font-semibold">
+                    {user ? 'Authenticated' : 'Ready'}
+                  </span>
+                </div>
+                <p className="text-xs text-[#777873] leading-relaxed">
+                  {user
+                    ? `Signed in as ${user.email}. Submitted briefs sync directly to Firestore with owner-isolated access.`
+                    : 'Sign in with Google to persist your project briefs in real time to our Firestore Client Portal.'}
+                </p>
+                <div className="flex items-center gap-2 pt-1">
+                  {!user && (
+                    <button
+                      type="button"
+                      onClick={signInWithGoogle}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#17191D] text-white text-[11px] font-mono uppercase tracking-wider hover:bg-[#252830] transition-colors"
+                    >
+                      <LogIn className="w-3 h-3 text-[#91A99B]" />
+                      <span>Google Sign-In</span>
+                    </button>
+                  )}
+                  {onOpenPortal && (
+                    <button
+                      type="button"
+                      onClick={onOpenPortal}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#F7F6F2] border border-[#E5E2DC] hover:border-[#17191D] text-[#17191D] text-[11px] font-mono uppercase tracking-wider transition-colors"
+                    >
+                      <span>Portal ({enquiries.length})</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+
               {/* Geographic Footprint */}
               <div className="p-5 bg-[#EFECE6]/70 border border-[#E5E2DC] rounded space-y-2">
                 <div className="text-xs font-mono uppercase font-bold text-[#17191D]">
@@ -226,15 +273,15 @@ export const ContactSection: React.FC<ContactSectionProps> = ({
                 className="text-xs font-mono text-[#777873] hover:text-[#17191D] flex items-center gap-1.5"
               >
                 <Code2 className="w-3.5 h-3.5" />
-                <span>Backend &amp; Supabase API Integration Point</span>
+                <span>Firebase Firestore &amp; Zero-Trust Rules Architecture</span>
                 <ChevronDown className={`w-3 h-3 transition-transform ${showIntegrationDetails ? 'rotate-180' : ''}`} />
               </button>
 
               {showIntegrationDetails && (
                 <div className="mt-3 p-3 bg-white border border-[#E5E2DC] rounded text-[11px] font-mono text-[#777873] space-y-1.5">
-                  <div className="text-[#17191D] font-bold">API Endpoint Architecture:</div>
+                  <div className="text-[#17191D] font-bold">Live Cloud Architecture (`directed-correlate-vdckx`):</div>
                   <p>
-                    Ready for Supabase (`supabase.from('enquiries').insert(...)`) or Resend `/api/send-enquiry`. Form state is validated client-side and packaged in standard JSON.
+                    Connected to Firebase Firestore (`/enquiries` &amp; `/opdAppointments`) with strict ABAC security rules, server timestamps, and Google OAuth authentication.
                   </p>
                 </div>
               )}
@@ -251,11 +298,19 @@ export const ContactSection: React.FC<ContactSectionProps> = ({
                 </div>
 
                 <div className="max-w-lg mx-auto space-y-2">
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-[#EFECE6] border border-[#E5E2DC] text-[10px] font-mono uppercase text-[#2E4639]">
+                    <Cloud className="w-3 h-3" />
+                    <span>
+                      {submittedData.syncedToCloud
+                        ? `Persisted to Firestore (${submittedData.id})`
+                        : `Saved to Client Portal (${submittedData.id})`}
+                    </span>
+                  </div>
                   <h3 className="font-heading text-2xl sm:text-3xl font-extrabold text-[#17191D]">
                     Project Enquiry Prepared
                   </h3>
                   <p className="text-sm text-[#777873] leading-relaxed">
-                    Thank you, <strong className="text-[#17191D]">{submittedData.fullName}</strong>. Your enquiry for <strong className="text-[#17191D]">{submittedData.businessName}</strong> ({submittedData.interestedService}) has been verified and formatted.
+                    Thank you, <strong className="text-[#17191D]">{submittedData.fullName}</strong>. Your enquiry for <strong className="text-[#17191D]">{submittedData.businessName}</strong> ({submittedData.interestedService}) has been verified and logged.
                   </p>
                 </div>
 
