@@ -441,3 +441,49 @@ export function generateLeadsCsv(leads: LeadRecord[]): string {
 
   return [headers.map(escapeCsvCell).join(','), ...rows].join('\n');
 }
+
+export const BOOTSTRAPPED_ADMIN_EMAIL = 'abhighodke5123@gmail.com';
+export const BOOTSTRAPPED_ADMIN_EMAILS = [
+  'abhighodke5123@gmail.com',
+  'abhighodke8877@gmail.com',
+  'abhighodke8877',
+];
+const VALID_ADMIN_ROLES: AdminRole[] = ['Super Admin', 'Admin', 'Manager', 'Staff'];
+
+/**
+ * Pure helper for resolving RBAC AdminRole from Firebase Auth state and `/admins/{uid}` document data.
+ * Enforces Zero-Trust email verification (`emailVerified === true`) to prevent unverified email spoofing.
+ */
+export function resolveFirebaseAdminRole(params: {
+  email: string | null | undefined;
+  emailVerified: boolean | undefined;
+  adminDocExists: boolean;
+  adminDocData?: Record<string, unknown> | null;
+}): AdminRole | null {
+  if (!params.emailVerified) {
+    return null;
+  }
+
+  const normalizedEmail = (params.email || '').trim().toLowerCase();
+  const docRole = params.adminDocData?.role;
+  const validDocRole =
+    typeof docRole === 'string' && VALID_ADMIN_ROLES.includes(docRole as AdminRole)
+      ? (docRole as AdminRole)
+      : null;
+
+  // Bootstrapped Super Admin (`abhighodke5123@gmail.com` or `abhighodke8877@gmail.com` with verified email)
+  if (
+    normalizedEmail === BOOTSTRAPPED_ADMIN_EMAIL ||
+    normalizedEmail === 'abhighodke8877@gmail.com'
+  ) {
+    return validDocRole || 'Super Admin';
+  }
+
+  // Trusted `/admins/{uid}` document in Firestore
+  if (params.adminDocExists) {
+    return validDocRole || 'Admin';
+  }
+
+  return null;
+}
+

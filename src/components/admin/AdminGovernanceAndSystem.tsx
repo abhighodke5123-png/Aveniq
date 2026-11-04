@@ -502,10 +502,10 @@ export const AdminGovernanceAndSystem: React.FC<{
       {
         name: 'Supabase PostgreSQL Schema & RLS',
         provider: 'PostgreSQL 16 Migration Ready',
-        identifier: 'supabase/migrations/001_aveniq_admin_schema.sql',
-        status: 'Schema Provisioned',
+        identifier: 'https://pikgvqzvainywbfdlusv.supabase.co',
+        status: 'Configured & Schema Provisioned',
         description:
-          'Complete relational schema with 13 normalized tables, foreign keys, indexes, and Row Level Security policies.',
+          'Complete relational schema with 13 normalized tables, foreign keys, indexes, and Row Level Security policies at pikgvqzvainywbfdlusv.supabase.co.',
       },
       {
         name: 'Stripe & Razorpay Gateway Verification',

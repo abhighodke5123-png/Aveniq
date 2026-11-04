@@ -168,7 +168,15 @@ interface AdminStoreContextValue {
 const AdminStoreContext = createContext<AdminStoreContextValue | undefined>(undefined);
 
 export const AdminStoreProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user, enquiries, signInWithGoogle, signOutUser } = useFirebaseStudio();
+  const {
+    user,
+    isAuthReady,
+    isRoleLoading,
+    adminRole,
+    enquiries,
+    signInWithGoogle,
+    signOutUser,
+  } = useFirebaseStudio();
 
   const [session, setSession] = useState<AdminSession | null>(() => {
     try {
@@ -200,7 +208,15 @@ export const AdminStoreProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       if (raw) {
         const parsed = JSON.parse(raw);
         if (parsed && Array.isArray(parsed.leads) && Array.isArray(parsed.clients)) {
-          return parsed;
+          // Ensure default studio team accounts from INITIAL_ADMIN_TEAM (like abhighodke8877) exist even if localStorage was created earlier
+          const existingEmails = new Set((parsed.teamMembers || []).map((m: TeamMemberRecord) => m.email.toLowerCase()));
+          const missingMembers = INITIAL_ADMIN_TEAM.filter((m) => !existingEmails.has(m.email.toLowerCase()));
+          const mergedTeam = missingMembers.length > 0 ? [...INITIAL_ADMIN_TEAM, ...(parsed.teamMembers || [])] : parsed.teamMembers;
+
+          return {
+            ...parsed,
+            teamMembers: mergedTeam || INITIAL_ADMIN_TEAM,
+          };
         }
       }
     } catch {
@@ -240,19 +256,25 @@ export const AdminStoreProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     }
   }, [session]);
 
-  // Automatically authenticate Super Admin if signed into Firebase with verified admin email
+  // Synchronize Firebase Auth + `/admins/{uid}` RBAC role into AdminSession
   useEffect(() => {
-    if (user && user.emailVerified && user.email === 'abhighodke5123@gmail.com' && !session) {
+    if (!isAuthReady || isRoleLoading) return;
+
+    if (user && user.emailVerified && adminRole && !session) {
       setSession({
         isAuthenticated: true,
-        email: user.email,
+        email: user.email || 'abhighodke8877@gmail.com',
         fullName: user.displayName || 'Abhi Ghodke',
-        role: 'Super Admin',
+        role: adminRole,
         authMethod: 'Firebase Google OAuth',
         signedInAtIso: new Date().toISOString(),
       });
+    } else if (user && (!user.emailVerified || !adminRole) && session?.authMethod === 'Firebase Google OAuth') {
+      // Immediately revoke OAuth admin session if Firebase role or email verification is absent
+      setSession(null);
+      setAuthMessage('Unauthorized Firebase account: Your account is not registered in /admins/{uid}.');
     }
-  }, [user, session]);
+  }, [isAuthReady, isRoleLoading, user, adminRole, session]);
 
   // Merge public website enquiries (`enquiries` from FirebaseContext) into CRM `leads`
   const mergedLeads = useMemo(() => {
@@ -286,7 +308,7 @@ export const AdminStoreProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     (action: string, entityType: string, entityId: string, details: string, actorOverride?: { email: string; role: AdminRole }) => {
       const entry: ActivityLogRecord = {
         id: `log_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-        actorEmail: actorOverride?.email || session?.email || 'abhighodke5123@gmail.com',
+        actorEmail: actorOverride?.email || session?.email || 'abhighodke8877@gmail.com',
         actorRole: actorOverride?.role || session?.role || 'Super Admin',
         action,
         entityType,
@@ -314,22 +336,38 @@ export const AdminStoreProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         };
       }
 
-      const email = emailInput.trim().toLowerCase();
-      if (!email || !email.includes('@')) {
+      const input = emailInput.trim().toLowerCase();
+      // Allow username without domain (e.g. 'abhighodke8877' maps to 'abhighodke8877@gmail.com') or full email
+      const normalizedEmail = input.includes('@') ? input : `${input}@gmail.com`;
+
+      if (!normalizedEmail || normalizedEmail.length < 3) {
         setFailedAttempts((n) => n + 1);
-        return { ok: false, error: 'Please enter a valid studio email address.' };
+        return { ok: false, error: 'Please enter a valid studio email address or username.' };
       }
 
+      // Check if user is the designated admin account abhighodke8877
+      const isDesignatedAdmin =
+        input === 'abhighodke8877' ||
+        normalizedEmail === 'abhighodke8877@gmail.com';
+
+      // Passcode validation: supports specific password 'Derek7566' as well as standard studio master key 'AVENIQ-STUDIO-2026'
+      const trimmedKey = accessKey.trim();
+      const isValidPassword =
+        (isDesignatedAdmin && (trimmedKey === 'Derek7566' || trimmedKey === 'AVENIQ-STUDIO-2026')) ||
+        (!isDesignatedAdmin && trimmedKey.length >= 6 && trimmedKey !== 'wrongpass');
+
       const matchedMember = store.teamMembers.find(
-        (m) => m.email.toLowerCase() === email
-      );
+        (m) =>
+          m.email.toLowerCase() === normalizedEmail ||
+          (isDesignatedAdmin && m.email.toLowerCase().includes('abhighodke8877'))
+      ) || (isDesignatedAdmin ? INITIAL_ADMIN_TEAM[0] : undefined);
 
       // Verify authorized studio member email + valid access passcode
-      if (!matchedMember || accessKey.trim().length < 6 || accessKey.trim() === 'wrongpass') {
+      if (!matchedMember || !isValidPassword) {
         setFailedAttempts((n) => n + 1);
         return {
           ok: false,
-          error: 'Invalid studio credentials or unauthorized email address. Only registered studio members may sign in.',
+          error: 'Invalid studio credentials or password. Please verify username/email and password.',
         };
       }
 

@@ -6,8 +6,76 @@ import {
   validatePaymentSubmission,
   buildClientFromLead,
   generateLeadsCsv,
+  resolveFirebaseAdminRole,
 } from './adminLogic';
 import { LeadRecord, ClientRecord, ProjectRecord, InvoiceRecord, PaymentRecord } from '../types/admin';
+
+test('resolveFirebaseAdminRole enforces email_verified and resolves RBAC roles from /admins/{uid}', () => {
+  // Rejects unverified email even if email matches bootstrapped Super Admin (Anti-Spoofing)
+  assert.equal(
+    resolveFirebaseAdminRole({
+      email: 'abhighodke5123@gmail.com',
+      emailVerified: false,
+      adminDocExists: true,
+      adminDocData: { role: 'Super Admin' },
+    }),
+    null
+  );
+
+  // Resolves verified bootstrapped Super Admin
+  assert.equal(
+    resolveFirebaseAdminRole({
+      email: 'abhighodke5123@gmail.com',
+      emailVerified: true,
+      adminDocExists: false,
+      adminDocData: null,
+    }),
+    'Super Admin'
+  );
+
+  assert.equal(
+    resolveFirebaseAdminRole({
+      email: 'abhighodke8877@gmail.com',
+      emailVerified: true,
+      adminDocExists: false,
+      adminDocData: null,
+    }),
+    'Super Admin'
+  );
+
+  // Resolves Firestore /admins/{uid} document with explicit Manager role
+  assert.equal(
+    resolveFirebaseAdminRole({
+      email: 'arjun@aveniq.studio',
+      emailVerified: true,
+      adminDocExists: true,
+      adminDocData: { email: 'arjun@aveniq.studio', role: 'Manager' },
+    }),
+    'Manager'
+  );
+
+  // Defaults to Admin if /admins/{uid} document exists without explicit role property
+  assert.equal(
+    resolveFirebaseAdminRole({
+      email: 'clara@aveniq.studio',
+      emailVerified: true,
+      adminDocExists: true,
+      adminDocData: { email: 'clara@aveniq.studio' },
+    }),
+    'Admin'
+  );
+
+  // Rejects verified non-admin user when /admins/{uid} does not exist
+  assert.equal(
+    resolveFirebaseAdminRole({
+      email: 'visitor@external.org',
+      emailVerified: true,
+      adminDocExists: false,
+      adminDocData: null,
+    }),
+    null
+  );
+});
 
 test('RBAC permission matrix enforces Super Admin, Admin, Manager, and Staff boundaries', () => {
   assert.equal(canPerformAdminAction('Super Admin', 'manage_roles_security'), true);

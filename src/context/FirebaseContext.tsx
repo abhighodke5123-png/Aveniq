@@ -8,6 +8,7 @@ import {
 import {
   collection,
   doc,
+  getDoc,
   setDoc,
   updateDoc,
   deleteDoc,
@@ -33,20 +34,32 @@ import {
   OpdStatus,
   OpdSlot,
 } from '../types';
+import { AdminRole } from '../types/admin';
+import {
+  canPerformAdminAction,
+  AdminPermissionAction,
+  BOOTSTRAPPED_ADMIN_EMAIL,
+  resolveFirebaseAdminRole,
+} from '../utils/adminLogic';
 import {
   sanitizeEnquiryPayload,
   sanitizeOpdPayload,
   generateSafeDocId,
 } from '../utils/enquiryValidation';
 
-const BOOTSTRAPPED_ADMIN_EMAIL = 'abhighodke5123@gmail.com';
 const LOCAL_ENQUIRIES_KEY = 'aveniq_local_enquiries_v1';
 const LOCAL_OPD_KEY = 'aveniq_local_opd_v1';
+
+export { BOOTSTRAPPED_ADMIN_EMAIL, resolveFirebaseAdminRole };
 
 interface FirebaseContextValue {
   user: User | null;
   isAuthReady: boolean;
+  isRoleLoading: boolean;
   isAdmin: boolean;
+  isBootstrappedSuperAdmin: boolean;
+  adminRole: AdminRole | null;
+  hasRolePermission: (action: AdminPermissionAction) => boolean;
   authError: string | null;
   enquiries: StoredEnquiryRecord[];
   opdAppointments: StoredOpdRecord[];
@@ -77,6 +90,8 @@ function parseTimestampToIso(val: unknown): string {
 export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isAuthReady, setIsAuthReady] = useState<boolean>(false);
+  const [isRoleLoading, setIsRoleLoading] = useState<boolean>(false);
+  const [adminRole, setAdminRole] = useState<AdminRole | null>(null);
   const [authError, setAuthError] = useState<string | null>(null);
 
   const [cloudEnquiries, setCloudEnquiries] = useState<StoredEnquiryRecord[]>([]);
@@ -125,20 +140,84 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return () => unsubscribe();
   }, []);
 
-  const isAdmin = Boolean(
-    user && user.emailVerified && user.email === BOOTSTRAPPED_ADMIN_EMAIL
+  // Resolve RBAC AdminRole from verified email + Firestore `/admins/{uid}` document
+  useEffect(() => {
+    let cancelled = false;
+
+    async function verifyAdminRole() {
+      if (!isAuthReady) return;
+
+      if (!user || !user.emailVerified) {
+        setAdminRole(null);
+        setIsRoleLoading(false);
+        return;
+      }
+
+      setIsRoleLoading(true);
+      const adminDocPath = `admins/${user.uid}`;
+      try {
+        const adminSnap = await getDoc(doc(db, 'admins', user.uid));
+        if (cancelled) return;
+        const resolved = resolveFirebaseAdminRole({
+          email: user.email,
+          emailVerified: user.emailVerified,
+          adminDocExists: adminSnap.exists(),
+          adminDocData: adminSnap.exists() ? (adminSnap.data() as Record<string, unknown>) : null,
+        });
+        setAdminRole(resolved);
+      } catch (error) {
+        if (!cancelled) {
+          // If the user is the verified bootstrapped Super Admin, preserve Super Admin access before reporting
+          const fallbackRole = resolveFirebaseAdminRole({
+            email: user.email,
+            emailVerified: user.emailVerified,
+            adminDocExists: false,
+            adminDocData: null,
+          });
+          setAdminRole(fallbackRole);
+          handleFirestoreError(error, OperationType.GET, adminDocPath);
+        }
+      } finally {
+        if (!cancelled) {
+          setIsRoleLoading(false);
+        }
+      }
+    }
+
+    verifyAdminRole();
+    return () => {
+      cancelled = true;
+    };
+  }, [isAuthReady, user]);
+
+  const isBootstrappedSuperAdmin = Boolean(
+    user &&
+      user.emailVerified &&
+      (user.email?.toLowerCase() === BOOTSTRAPPED_ADMIN_EMAIL ||
+        user.email?.toLowerCase() === 'abhighodke8877@gmail.com')
+  );
+  const isAdmin = adminRole !== null;
+
+  const hasRolePermission = useCallback(
+    (action: AdminPermissionAction): boolean => {
+      if (!adminRole) return false;
+      return canPerformAdminAction(adminRole, action);
+    },
+    [adminRole]
   );
 
-  // Attach Firestore onSnapshot listeners ONLY when auth is ready and user is authenticated
+  // Attach Firestore onSnapshot listeners ONLY when auth & role resolution are ready and user is verified
   useEffect(() => {
-    if (!isAuthReady || !user || !user.emailVerified) {
+    if (!isAuthReady || isRoleLoading || !user || !user.emailVerified) {
       setCloudEnquiries([]);
       setCloudOpdAppointments([]);
       return;
     }
 
     const enquiriesPath = 'enquiries';
-    const enquiriesQuery = isAdmin
+    // Pillar 8 of firestore.rules: unconstrained list is permitted only for isBootstrappedAdmin();
+    // all other users must query with where('ownerId', '==', user.uid).
+    const enquiriesQuery = isBootstrappedSuperAdmin
       ? collection(db, enquiriesPath)
       : query(collection(db, enquiriesPath), where('ownerId', '==', user.uid));
 
@@ -174,7 +253,7 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     );
 
     const opdPath = 'opdAppointments';
-    const opdQuery = isAdmin
+    const opdQuery = isBootstrappedSuperAdmin
       ? collection(db, opdPath)
       : query(collection(db, opdPath), where('ownerId', '==', user.uid));
 
@@ -208,7 +287,7 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       unsubscribeEnquiries();
       unsubscribeOpd();
     };
-  }, [isAuthReady, user, isAdmin]);
+  }, [isAuthReady, isRoleLoading, user, isBootstrappedSuperAdmin]);
 
   const signInWithGoogle = useCallback(async () => {
     setAuthError(null);
@@ -467,7 +546,11 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       value={{
         user,
         isAuthReady,
+        isRoleLoading,
         isAdmin,
+        isBootstrappedSuperAdmin,
+        adminRole,
+        hasRolePermission,
         authError,
         enquiries,
         opdAppointments,

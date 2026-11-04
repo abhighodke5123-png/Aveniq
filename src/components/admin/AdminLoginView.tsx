@@ -26,8 +26,8 @@ export const AdminLoginView: React.FC<AdminLoginViewProps> = ({ onExitToSite }) 
     authMessage,
   } = useAdminStore();
 
-  const [email, setEmail] = useState('abhighodke5123@gmail.com');
-  const [accessKey, setAccessKey] = useState('AVENIQ-STUDIO-2026');
+  const [email, setEmail] = useState('abhighodke8877@gmail.com');
+  const [accessKey, setAccessKey] = useState('Derek7566');
   const [selectedRole, setSelectedRole] = useState<AdminRole>('Super Admin');
   const [error, setError] = useState<string | null>(null);
 
@@ -108,15 +108,15 @@ export const AdminLoginView: React.FC<AdminLoginViewProps> = ({ onExitToSite }) 
               htmlFor="admin-login-email"
               className="block text-xs font-mono text-white/80 mb-1.5"
             >
-              Studio Email Address
+              Studio Email or Username
             </label>
             <input
               id="admin-login-email"
-              type="email"
+              type="text"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="abhighodke5123@gmail.com"
+              placeholder="abhighodke8877 or abhighodke8877@gmail.com"
               className="w-full px-3.5 py-2.5 bg-[#17191D] border border-white/15 text-sm text-white focus:border-[#91A99B] focus:outline-none"
             />
           </div>

@@ -611,6 +611,18 @@ export const INITIAL_ADMIN_PAYMENTS: PaymentRecord[] = [
 
 export const INITIAL_ADMIN_TEAM: TeamMemberRecord[] = [
   {
+    id: 'tm_00',
+    fullName: 'Abhi Ghodke',
+    email: 'abhighodke8877@gmail.com',
+    role: 'Super Admin',
+    title: 'Executive Director & Studio Head',
+    department: 'Executive',
+    activeProjectsCount: 3,
+    utilizationPercent: 85,
+    status: 'Active',
+    joinedAtIso: '2024-01-01T09:00:00Z',
+  },
+  {
     id: 'tm_01',
     fullName: 'Abhi Ghodke',
     email: 'abhighodke5123@gmail.com',

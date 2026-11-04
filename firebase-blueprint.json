@@ -2,7 +2,7 @@
   "entities": {
     "Admin": {
       "title": "Admin",
-      "description": "Trusted administrator registry document keyed by Firebase Auth UID.",
+      "description": "Trusted administrator registry document keyed by Firebase Auth UID with RBAC role assignment.",
       "type": "object",
       "properties": {
         "email": {
@@ -12,13 +12,20 @@
           "minLength": 3,
           "maxLength": 254
         },
+        "role": {
+          "type": "string",
+          "description": "Assigned RBAC role for the studio administrator.",
+          "enum": ["Super Admin", "Admin", "Manager", "Staff"],
+          "minLength": 5,
+          "maxLength": 32
+        },
         "createdAt": {
           "type": "string",
           "format": "date-time",
           "description": "Server timestamp when admin record was provisioned."
         }
       },
-      "required": ["email", "createdAt"]
+      "required": ["email", "role", "createdAt"]
     },
     "Enquiry": {
       "title": "Enquiry",
