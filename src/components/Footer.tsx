@@ -148,6 +148,17 @@ export const Footer: React.FC<FooterProps> = ({ onOpenPrivacy, onNavigatePage })
           <div className="flex items-center gap-6">
             <button
               type="button"
+              onClick={() => {
+                onNavigatePage('admin');
+                scrollToTop();
+              }}
+              className="hover:text-white transition-colors"
+            >
+              Admin Command Centre
+            </button>
+
+            <button
+              type="button"
               onClick={onOpenPrivacy}
               className="hover:text-white transition-colors"
             >

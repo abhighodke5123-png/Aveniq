@@ -1,4 +1,11 @@
-export type PageId = 'home' | 'services' | 'industries' | 'work' | 'about' | 'contact';
+export type PageId =
+  | 'home'
+  | 'services'
+  | 'industries'
+  | 'work'
+  | 'about'
+  | 'contact'
+  | 'admin';
 
 export interface RouteInfo {
   page: PageId;
@@ -44,17 +51,24 @@ export const ROUTES: Record<PageId, RouteInfo> = {
     label: 'Contact',
     badgeNumber: '06',
   },
+  admin: {
+    page: 'admin',
+    title: 'Admin Command Centre | AVENIQ',
+    label: 'Admin',
+    badgeNumber: '07',
+  },
 };
 
 export function parsePageFromPath(pathOrHash: string): PageId {
   const clean = pathOrHash.toLowerCase().replace(/^[/#]+/, '').trim();
-  const base = clean.split(/[?#]/)[0];
+  const base = clean.split(/[?#/]/)[0];
 
   if (base === 'services') return 'services';
   if (base === 'industries') return 'industries';
   if (base === 'work') return 'work';
   if (base === 'about') return 'about';
   if (base === 'contact' || base === 'start-a-project') return 'contact';
+  if (base === 'admin') return 'admin';
 
   return 'home';
 }

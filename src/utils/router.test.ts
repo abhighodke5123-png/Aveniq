@@ -13,6 +13,9 @@ test('parsePageFromPath returns correct PageId for various hashes and paths', ()
   assert.equal(parsePageFromPath('#/about'), 'about');
   assert.equal(parsePageFromPath('#/contact'), 'contact');
   assert.equal(parsePageFromPath('#/start-a-project'), 'contact');
+  assert.equal(parsePageFromPath('/admin'), 'admin');
+  assert.equal(parsePageFromPath('#/admin'), 'admin');
+  assert.equal(parsePageFromPath('/admin/leads'), 'admin');
   assert.equal(parsePageFromPath('#/unknown-page'), 'home');
 });
 
@@ -23,10 +26,11 @@ test('formatPageUrl produces valid hash urls', () => {
   assert.equal(formatPageUrl('work'), '#/work');
   assert.equal(formatPageUrl('about'), '#/about');
   assert.equal(formatPageUrl('contact'), '#/contact');
+  assert.equal(formatPageUrl('admin'), '#/admin');
 });
 
 test('ROUTES configuration covers all required pages with badges', () => {
-  const pages = ['home', 'services', 'industries', 'work', 'about', 'contact'] as const;
+  const pages = ['home', 'services', 'industries', 'work', 'about', 'contact', 'admin'] as const;
   for (const page of pages) {
     assert.ok(ROUTES[page]);
     assert.ok(ROUTES[page].badgeNumber);
