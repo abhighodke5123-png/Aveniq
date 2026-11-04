@@ -247,25 +247,13 @@ export const IndustriesPage: React.FC<IndustriesPageProps> = ({
             </div>
           </div>
         </div>
+      </div>
 
-        {/* Embedded Featured Healthcare Flagship */}
-        <div className="mt-20">
-          <div className="mb-6 flex items-center justify-between">
-            <div>
-              <span className="font-mono text-xs text-[#91A99B] font-bold uppercase">
-                FLAGSHIP SPECIALITY
-              </span>
-              <h3 className="font-heading text-2xl font-bold text-[#17191D]">
-                Healthcare Specialisation Architecture
-              </h3>
-            </div>
-            <span className="text-xs font-mono text-[#777873]">Hospital &amp; Clinic Portals</span>
-          </div>
-
-          <HealthcareFeature
-            onStartHealthcareProject={() => onInitiateIndustryInquiry('Hospital Website')}
-          />
-        </div>
+      {/* Full-Width Featured Healthcare Flagship Section */}
+      <div className="mt-20">
+        <HealthcareFeature
+          onStartHealthcareProject={() => onInitiateIndustryInquiry('Hospital Website')}
+        />
       </div>
     </div>
   );

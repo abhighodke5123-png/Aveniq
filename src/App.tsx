@@ -51,6 +51,19 @@ export default function App() {
     }
   }, [currentPage]);
 
+  // Close open modals on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setSelectedProject(null);
+        setSelectedService(null);
+        setIsPrivacyOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   const handleNavigate = (page: PageId, options?: { service?: ServiceCategory }) => {
     if (options?.service) {
       setActiveEnquiryService(options.service);

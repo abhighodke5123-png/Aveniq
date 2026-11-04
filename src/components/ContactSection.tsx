@@ -35,9 +35,15 @@ const BUDGET_OPTIONS = [
 
 interface ContactSectionProps {
   initialService?: ServiceCategory;
+  hideHeader?: boolean;
+  embedded?: boolean;
 }
 
-export const ContactSection: React.FC<ContactSectionProps> = ({ initialService }) => {
+export const ContactSection: React.FC<ContactSectionProps> = ({
+  initialService,
+  hideHeader = false,
+  embedded = false,
+}) => {
   const [formData, setFormData] = useState<EnquiryFormData>({
     fullName: '',
     businessName: '',
@@ -49,6 +55,12 @@ export const ContactSection: React.FC<ContactSectionProps> = ({ initialService }
     timeline: '1-3 months',
     projectDescription: '',
   });
+
+  React.useEffect(() => {
+    if (initialService) {
+      setFormData((prev) => ({ ...prev, interestedService: initialService }));
+    }
+  }, [initialService]);
 
   // Honeypot for spam protection
   const [honeypot, setHoneypot] = useState('');
@@ -93,7 +105,7 @@ export const ContactSection: React.FC<ContactSectionProps> = ({ initialService }
     setErrors({});
 
     // Simulate API submission / network dispatch
-    await new Promise((resolve) => setTimeout(resolve, 800));
+    await new Promise((resolve) => setTimeout(resolve, 500));
 
     setIsSubmitting(false);
     setSubmittedData({ ...formData });
@@ -120,25 +132,34 @@ export const ContactSection: React.FC<ContactSectionProps> = ({ initialService }
   };
 
   return (
-    <section id="contact" className="py-24 md:py-32 border-b border-[#E5E2DC] bg-[#F7F6F2]">
-      <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-12">
+    <section
+      id="contact"
+      className={
+        embedded
+          ? 'bg-[#F7F6F2]'
+          : 'py-24 md:py-32 border-b border-[#E5E2DC] bg-[#F7F6F2]'
+      }
+    >
+      <div className={embedded ? '' : 'max-w-7xl mx-auto px-5 sm:px-8 lg:px-12'}>
         {/* Section Header */}
-        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 pb-12 border-b border-[#E5E2DC]">
-          <div>
-            <span className="font-mono text-xs text-[#777873] uppercase tracking-widest block mb-3">
-              START A PROJECT
-            </span>
-            <h2 className="font-heading text-3xl sm:text-4xl md:text-5xl font-extrabold text-[#17191D] tracking-tight">
-              Tell us about your next ambition.
-            </h2>
+        {!hideHeader && (
+          <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 pb-12 border-b border-[#E5E2DC] mb-12">
+            <div>
+              <span className="font-mono text-xs text-[#777873] uppercase tracking-widest block mb-3">
+                START A PROJECT
+              </span>
+              <h2 className="font-heading text-3xl sm:text-4xl md:text-5xl font-extrabold text-[#17191D] tracking-tight">
+                Tell us about your next ambition.
+              </h2>
+            </div>
+
+            <p className="text-sm text-[#777873] max-w-md leading-relaxed">
+              Every submission is reviewed by our engineering and design leads. We reply within 24 business hours with an initial project perspective.
+            </p>
           </div>
+        )}
 
-          <p className="text-sm text-[#777873] max-w-md leading-relaxed">
-            Every submission is reviewed by our engineering and design leads. We reply within 24 business hours with an initial project perspective.
-          </p>
-        </div>
-
-        <div className="mt-12 grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16">
           {/* Left Column: Direct Communication Info & Trust Marks */}
           <div className="lg:col-span-4 flex flex-col justify-between">
             <div className="space-y-8">

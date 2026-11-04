@@ -299,10 +299,14 @@ export const HealthcareFeature: React.FC<HealthcareFeatureProps> = ({
                     <form onSubmit={handleSimulatedBooking} className="space-y-3">
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                         <div>
-                          <label className="text-[10px] font-mono uppercase text-[#777873] block mb-1">
+                          <label
+                            htmlFor="mockup-patient-name"
+                            className="text-[10px] font-mono uppercase text-[#777873] block mb-1"
+                          >
                             Patient Name
                           </label>
                           <input
+                            id="mockup-patient-name"
                             type="text"
                             required
                             placeholder="e.g. Ramesh Kumar"
@@ -313,10 +317,14 @@ export const HealthcareFeature: React.FC<HealthcareFeatureProps> = ({
                         </div>
 
                         <div>
-                          <label className="text-[10px] font-mono uppercase text-[#777873] block mb-1">
+                          <label
+                            htmlFor="mockup-slot"
+                            className="text-[10px] font-mono uppercase text-[#777873] block mb-1"
+                          >
                             Preferred Slot
                           </label>
                           <select
+                            id="mockup-slot"
                             value={selectedSlot}
                             onChange={(e) => setSelectedSlot(e.target.value)}
                             className="w-full text-xs px-2.5 py-1.5 bg-white border border-[#E5E2DC] focus:border-[#17191D] focus:outline-none"

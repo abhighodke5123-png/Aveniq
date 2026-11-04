@@ -68,10 +68,12 @@ export const ContactPage: React.FC<ContactPageProps> = ({
         </div>
 
         {/* Embedded Complete Enquiry Form Section */}
-        <div className="mt-8">
+        <div className="mt-12">
           <ContactSection
             key={initialService}
             initialService={initialService}
+            hideHeader={true}
+            embedded={true}
           />
         </div>
 

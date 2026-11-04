@@ -234,15 +234,17 @@ export const ServicesPage: React.FC<ServicesPageProps> = ({
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8">
             {SERVICES_DATA.map((srv) => (
-              <div
+              <button
                 key={srv.id}
+                type="button"
                 onClick={() => {
                   setActiveServiceId(srv.id);
-                  window.scrollTo({ top: 380, behavior: 'smooth' });
+                  window.scrollTo({ top: 320, behavior: 'smooth' });
                 }}
-                className={`p-6 border transition-all cursor-pointer flex flex-col justify-between min-h-[260px] ${
+                aria-label={`Select pillar ${srv.number}: ${srv.title}`}
+                className={`p-6 border text-left transition-all cursor-pointer flex flex-col justify-between min-h-[260px] ${
                   activeServiceId === srv.id
-                    ? 'border-[#17191D] bg-[#EAE8E1]/40 shadow-sm'
+                    ? 'border-[#17191D] bg-[#EAE8E1]/60 shadow-sm'
                     : 'border-[#E5E2DC] bg-white hover:border-[#17191D]/40'
                 }`}
               >
@@ -263,11 +265,11 @@ export const ServicesPage: React.FC<ServicesPageProps> = ({
                   </p>
                 </div>
 
-                <div className="pt-4 mt-4 border-t border-[#E5E2DC] flex items-center justify-between text-xs font-semibold text-[#17191D]">
+                <div className="pt-4 mt-4 border-t border-[#E5E2DC] w-full flex items-center justify-between text-xs font-semibold text-[#17191D]">
                   <span>View Scope</span>
                   <ArrowUpRight className="w-3.5 h-3.5 text-[#91A99B]" />
                 </div>
-              </div>
+              </button>
             ))}
           </div>
         </div>

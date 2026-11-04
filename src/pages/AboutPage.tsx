@@ -131,7 +131,7 @@ export const AboutPage: React.FC<AboutPageProps> = ({ onNavigate }) => {
             </div>
 
             <div className="p-5 bg-[#F7F6F2] border border-[#E5E2DC] space-y-2">
-              <div className="font-mono text-xs font-bold text-[#91A99B]">03 / CODE & IP OWNERSHIP</div>
+              <div className="font-mono text-xs font-bold text-[#91A99B]">03 / CODE &amp; IP OWNERSHIP</div>
               <div className="font-heading text-base font-bold text-[#17191D]">100% Client Property</div>
               <p className="text-xs text-[#777873] leading-relaxed">
                 Zero proprietary lock-in. All Git repositories, design tokens, and DNS credentials are transferred to your legal entity upon project sign-off.
@@ -139,19 +139,19 @@ export const AboutPage: React.FC<AboutPageProps> = ({ onNavigate }) => {
             </div>
           </div>
         </div>
+      </div>
 
-        {/* Studio Core Tenets */}
-        <div className="mt-20">
-          <WhyAveniq />
-        </div>
+      {/* Full-Width Studio Core Tenets */}
+      <div className="mt-20 border-t border-[#E5E2DC]">
+        <WhyAveniq />
+      </div>
 
-        {/* 5-Step Process Timeline */}
-        <div className="mt-8">
-          <ProcessSection />
-        </div>
+      {/* Full-Width 5-Step Process Timeline */}
+      <ProcessSection />
 
-        {/* Final CTA */}
-        <div className="mt-20 p-8 sm:p-12 bg-[#17191D] text-[#F7F6F2] border border-[#17191D] flex flex-col md:flex-row items-center justify-between gap-6">
+      {/* Final CTA */}
+      <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-12 mt-20">
+        <div className="p-8 sm:p-12 bg-[#17191D] text-[#F7F6F2] border border-[#17191D] flex flex-col md:flex-row items-center justify-between gap-6">
           <div>
             <div className="font-mono text-xs text-[#91A99B] font-bold uppercase mb-1">
               READY TO COMMENCE?

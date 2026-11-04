@@ -81,7 +81,7 @@ export const WorkPage: React.FC<WorkPageProps> = ({
           </div>
 
           <div className="text-xs font-mono text-[#777873]">
-            Showing {filteredProjects.length} Architectural Study{filteredProjects.length > 1 ? 'ies' : ''}
+            Showing {filteredProjects.length} Architectural {filteredProjects.length === 1 ? 'Study' : 'Studies'}
           </div>
         </div>
 
